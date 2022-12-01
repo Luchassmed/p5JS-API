@@ -1,5 +1,6 @@
-let curr = "";
 var api = "https://api.coinstats.app/public/v1/coins/";
+let curr = "";
+var img;
 var myInput;
 var button;
 var timer = 0;
@@ -25,11 +26,9 @@ function setup() {
   speechRec = new p5.SpeechRec("en-US", gotSpeech);
   // "Continuous recognition" (as opposed to one time only)
   let continuous = false;
+  print(continuous);
   // If you want to try partial recognition (faster, less accurate)
   let interimResults = false;
-
-  // DOM element to display results
-  let output = select("#speech");
 
   textSize(30);
 
@@ -62,16 +61,13 @@ function setup() {
 
   // Speech recognized event
   function gotSpeech() {
-    // Something is there
     // Get it as a string, you can also get JSON with more info
     console.log(speechRec);
     if (speechRec.resultValue) {
-      let said = speechRec.resultString;
-      console.log(said);
-      speechCurr = said;
+      speechCurr = speechRec.resultString;
+      console.log(speechCurr);
       myInput.value(speechCurr);
       drawInput();
-      // buttonText(speechCurr);
       stopSpeech = false;
       let col = color(255, 255, 255);
       speechButton.style("background-color", col);
@@ -89,38 +85,44 @@ function setup() {
   }
 }
 
-function gotData(data) {}
-
 //------ Crypto buttons -------
 function btcShow() {
   var api = "https://api.coinstats.app/public/v1/coins/bitcoin";
-  loadJSON(api, buttonText);
+  loadJSON(api, showCurrency);
 }
 
 function etcShow() {
   var api = "https://api.coinstats.app/public/v1/coins/ethereum";
-  loadJSON(api, buttonText);
+  loadJSON(api, showCurrency);
 }
 
 function usdtShow() {
   var api = "https://api.coinstats.app/public/v1/coins/tether";
-  loadJSON(api, buttonText);
+  loadJSON(api, showCurrency);
 }
 
 function bnbShow() {
   var api = "https://api.coinstats.app/public/v1/coins/binance-coin";
-  loadJSON(api, buttonText);
+  loadJSON(api, showCurrency);
 }
 
 function solShow() {
   var api = "https://api.coinstats.app/public/v1/coins/solana";
-  loadJSON(api, buttonText);
+  loadJSON(api, showCurrency);
 }
 
-function buttonText(data) {
+function showCurrency(data) {
   var priceChange = data.coin.priceChange1d;
+  var icon = data.coin.icon;
   var cryptoName = data.coin.id;
+  var cryptoPrice = data.coin.price;
   var arrowColor;
+
+  if (img != undefined) {
+    img.remove();
+  }
+  img = createImg(icon);
+  img.position(27, 380);
 
   clear();
   background(0);
@@ -129,8 +131,8 @@ function buttonText(data) {
   textSize(50);
   text("CryptoHub", 20, 60);
   textSize(20);
-  text("Price of " + cryptoName + ":\n" + data.coin.price, 20, 140);
-  text("Todays price change: \n" + data.coin.priceChange1d, 20, 200);
+  text("Price of " + cryptoName + ":\n" + cryptoPrice, 20, 140);
+  text("Todays price change: \n" + priceChange, 20, 200);
 
   if (priceChange < -10) {
     priceChange = -9.9;
@@ -144,7 +146,6 @@ function buttonText(data) {
   if (priceChange < 0) {
     arrowColor = "red";
   }
-
   if (priceChange == 0) {
     arrowColor = "grey";
   }
@@ -161,7 +162,6 @@ function drawArrow(base, vec, myColor) {
   push();
   stroke(myColor);
   strokeWeight(3);
-  //fill(myColor);
   translate(base.x, base.y);
   line(0, 0, vec.x, vec.y);
   rotate(vec.heading());
@@ -172,27 +172,16 @@ function drawArrow(base, vec, myColor) {
 }
 
 function drawInput() {
-  //clear();
   fill(255);
-  var curr = myInput.value().toLowerCase();
-  if (myInput.value() == "binance coin") {
+  curr = myInput.value().toLowerCase();
+  if (curr == binanceCoin) {
     curr = "binance-coin";
   }
 
   var currenturl = api + encodeURI(curr);
-  print(currenturl);
-  httpGet(currenturl, "json", false, function (response) {
-    curr = myInput.value();
-    coins = response;
-
-    if (coins != undefined && coins.coin != undefined) {
-      loadJSON(currenturl, buttonText);
-      /*
-         print(coins);
-         textSize(20);
-         text("The price of " + curr + " is: \n" + coins.coin.price, 20, 80);
-         text("Todays price change: \n" + coins.coin.priceChange1d, 20, 140);
-         */
+  httpGet(currenturl, "json", function (response) {
+    if (response != undefined && response.coin != undefined) {
+      loadJSON(currenturl, showCurrency);
     } else {
       clear();
       background(0);
@@ -205,15 +194,6 @@ function drawInput() {
       text("The chosen cryptocurrency:", 20, 140);
       text("'" + curr + "'" + " doesn't exist", 20, 165);
     }
+    print(response);
   });
 }
-
-function draw() {
-  if (coins != undefined && coins.coin != undefined) {
-    if (millis() - timer > 2000) {
-      timer = millis();
-    }
-  }
-}
-
-function keyPressed() {}
